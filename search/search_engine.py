@@ -365,8 +365,13 @@ def search(query: str, max_results: int = 7, deduplicate: bool = True) -> List[D
 
 # ── Self-test ─────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    import sys
+    # Ensure UTF-8 output on Windows consoles that default to cp1252
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
     print("=" * 60)
-    print("  STEM Search Engine – Self-test")
+    print("  STEM Search Engine - Self-test")
     print("=" * 60)
 
     engine = STEMSearchEngine()
@@ -377,7 +382,7 @@ if __name__ == "__main__":
     # Test 2: Domain browsing
     for domain in ["Physics", "Chemistry", "Biology", "Mathematics"]:
         names = [c["name"] for c in engine.get_concepts_by_domain(domain)]
-        print(f"  {domain:<12} → {names}")
+        print(f"  {domain:<12} -> {names}")
 
     # Test 3: Keyword searches
     queries = [
@@ -387,7 +392,7 @@ if __name__ == "__main__":
         "equation variable algebra",
         "molecule bond covalent",
         "cell organelle mitochondria",
-        "mass acceleration",        # overlaps Gravity + Force → dedup test
+        "mass acceleration",        # overlaps Gravity + Force -> dedup test
         "fist hand closed",         # no match expected
     ]
 
@@ -414,7 +419,7 @@ if __name__ == "__main__":
     print(f"  Before dedup: {[r['name'] for r in raw]}")
     print(f"  After  dedup: {[r['name'] for r in dedup]}")
     if len(dedup) < len(raw):
-        print(f"  → Gesture redundancy reduced by {len(raw)-len(dedup)} result(s) ✅")
+        print(f"  -> Gesture redundancy reduced by {len(raw)-len(dedup)} result(s) [OK]")
 
     # Test 5: Concept lookup
     print()
@@ -423,4 +428,4 @@ if __name__ == "__main__":
         print(f"Concept lookup BIO_D: {concept['name']} | {concept['domain']} | {concept['difficulty']}")
 
     print()
-    print("✅  Search engine verified successfully.")
+    print("[OK]  Search engine verified successfully.")
