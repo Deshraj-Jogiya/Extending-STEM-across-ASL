@@ -36,6 +36,8 @@ WLASL.
 - **Tests and CI:** pytest covers the landmark normalisation, contour features, resampling, mirroring, the split, the model and the
   Flask route; GitHub Actions runs them and the original smoke tests.
 
+Measured results, each with the question, the test and the decision: [docs/FINDINGS.md](docs/FINDINGS.md).
+
 ## Architecture
 
 ```mermaid
