@@ -16,8 +16,7 @@ bidirectional GRU.
 | Chance (1 of 29) | 0.0345 |
 | Model time per clip | 0.34 ms |
 
-**Decision:** the browser page shows the top three signs, not only the top one, since the right sign is in the top three far more
-often.
+**Decision:** the browser page (`/signs`) shows the top three signs for each recording, not only the top one.
 
 **Skills shown:** MediaPipe Hand Landmarker, OpenCV, PyTorch (Conv1d + bidirectional GRU), seeded holdout evaluation.
 
@@ -35,8 +34,8 @@ often.
 | paper | 0.5 | print (one clip) |
 | school | 0.5 | paper (one clip) |
 
-**Decision:** the misses are mostly between related computing and school signs, which is where the hand-shape analysis below finds
-shared shapes (for example machine, paper and school); lessons group those signs instead of teaching them apart.
+**What it shows:** the misses fall between related computing and school signs (network and internet; paper, print and school),
+the kind of signs the hand-shape analysis below finds close together.
 
 **Skills shown:** confusion-matrix error analysis, pandas.
 
