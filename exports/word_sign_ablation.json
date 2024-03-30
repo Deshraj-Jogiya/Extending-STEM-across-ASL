@@ -1,0 +1,11 @@
+{
+  "landmarks_and_contours": {
+    "top1_accuracy": 0.7586,
+    "top3_accuracy": 0.9483
+  },
+  "landmarks_only": {
+    "top1_accuracy": 0.6552,
+    "top3_accuracy": 0.9138
+  },
+  "test_clips": 58
+}

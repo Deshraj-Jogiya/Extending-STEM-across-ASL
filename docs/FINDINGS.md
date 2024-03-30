@@ -42,6 +42,25 @@ the kind of signs the hand-shape analysis below finds close together.
 **Source:** `exports/word_sign_metrics.json` (`per_sign_accuracy`), `exports/word_sign_confusion.csv`,
 `exports/gesture_redundancy.json`.
 
+## Do the OpenCV hand-shape values add anything over the landmarks?
+
+**How it was tested:** the same model, split and seed, retrained with the 12 OpenCV contour values per frame set to zero, so it
+sees landmarks only (`word_signs/ablation.py`).
+
+| Features | Top-1 | Top-3 |
+|---|---|---|
+| Landmarks and OpenCV contours | 0.7586 | 0.9483 |
+| Landmarks only | 0.6552 | 0.9138 |
+
+**What it shows:** the contour values carry real information: without them, 6 more of the 58 held-out clips are missed.
+
+**Decision:** the browser version keeps them (OpenCV.js runs the same contour steps), rather than shipping the lighter
+landmarks-only model (`word_signs/export_lab.py`).
+
+**Skills shown:** ablation testing, OpenCV, PyTorch.
+
+**Source:** `exports/word_sign_ablation.json`, `word_signs/ablation.py`.
+
 ## How many distinct hand shapes do the 29 signs need?
 
 **How it was tested:** each clip's hand shape is how far each finger is bent and spread while the sign is held; two signs share a
