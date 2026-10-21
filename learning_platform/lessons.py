@@ -1,5 +1,5 @@
 """
-platform/lessons.py
+learning_platform/lessons.py
 -------------------
 Definitions for all 7 STEM lessons on the Extending STEM across ASL platform.
 

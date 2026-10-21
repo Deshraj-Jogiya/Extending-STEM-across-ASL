@@ -1,0 +1,41 @@
+{
+  "signs": 29,
+  "distinct_hand_shapes": 18,
+  "hand_shapes_saved": 11,
+  "reduction": 0.3793,
+  "pairs_sharing": 55,
+  "shared_groups": [
+    [
+      "email",
+      "program",
+      "write",
+      "learn"
+    ],
+    [
+      "letter",
+      "energy",
+      "research"
+    ],
+    [
+      "computer",
+      "network"
+    ],
+    [
+      "machine",
+      "paper",
+      "school"
+    ],
+    [
+      "print",
+      "science"
+    ],
+    [
+      "television",
+      "calculate"
+    ],
+    [
+      "chemistry",
+      "picture"
+    ]
+  ]
+}

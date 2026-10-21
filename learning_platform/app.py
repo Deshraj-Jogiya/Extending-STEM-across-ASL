@@ -1,5 +1,5 @@
 """
-platform/app.py
+learning_platform/app.py
 ---------------
 Flask web application for the Extending STEM across ASL platform.
 
@@ -9,10 +9,12 @@ GET  /                         Lesson index — browse all 7 STEM concepts
 GET  /lesson/<name>            Full lesson view with ASL terms and quiz
 POST /search                   Keyword search across STEM concepts
 POST /recognize                Gesture prediction endpoint (accepts image upload)
+GET  /signs                    Webcam page: sign a word and see the recognised sign
+POST /recognize-sign           Word-sign prediction from webcam frames (JSON) or a video upload
 
 Run
 ---
-    python platform/app.py
+    python learning_platform/app.py
 
 Then open  http://localhost:5000  in your browser.
 """
@@ -33,7 +35,7 @@ from flask import (
     redirect, url_for,
 )
 
-from platform.lessons      import list_all_lessons, get_lesson_by_name, LESSONS
+from learning_platform.lessons      import list_all_lessons, get_lesson_by_name, LESSONS
 from search.search_engine  import STEMSearchEngine
 
 app    = Flask(__name__)
@@ -332,6 +334,7 @@ def _navbar(query: str = "") -> str:
     return f"""
     <nav>
       <a class="brand" href="/" id="nav-brand">🤟 STEM × ASL</a>
+      <a href="/signs" id="nav-signs" style="color:var(--accent);margin-right:1rem">Sign camera</a>
       <form method="POST" action="/search" id="nav-search-form">
         <input type="text" name="query" id="nav-search-input"
                placeholder="Search STEM concepts…" value="{query}" autocomplete="off">
@@ -646,6 +649,104 @@ def recognize():
         "class_index":  ord(letter) - ord("A"),
         "model_loaded": model_loaded,
     })
+
+
+_sign_recognizer = None
+
+
+def _get_sign_recognizer():
+    global _sign_recognizer
+    if _sign_recognizer is None:
+        from word_signs.recognizer import SignRecognizer
+        _sign_recognizer = SignRecognizer()
+    return _sign_recognizer
+
+
+SIGNS_PAGE_JS = """
+<script>
+const video = document.getElementById('cam'), canvas = document.createElement('canvas');
+const btn = document.getElementById('record-btn'), out = document.getElementById('sign-result');
+const FPS = 15, SECONDS = 2;
+navigator.mediaDevices.getUserMedia({video: {width: 640, height: 480}}).then(s => { video.srcObject = s; btn.disabled = false; })
+  .catch(e => { out.textContent = 'Camera unavailable: ' + e.message; });
+btn.onclick = async () => {
+  btn.disabled = true; const frames = [];
+  for (let n = 3; n > 0; n--) { out.textContent = 'Sign in ' + n + '…'; await new Promise(r => setTimeout(r, 700)); }
+  out.textContent = 'Recording…';
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  for (let i = 0; i < FPS * SECONDS; i++) {
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    frames.push(canvas.toDataURL('image/jpeg', 0.8));
+    await new Promise(r => setTimeout(r, 1000 / FPS));
+  }
+  out.textContent = 'Recognising…';
+  const res = await fetch('/recognize-sign', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                              body: JSON.stringify({frames})});
+  const data = await res.json(); btn.disabled = false;
+  if (!res.ok) { out.textContent = data.error; return; }
+  out.innerHTML = data.predictions.map((p, i) => `<div class="${i ? 'alt' : 'top'}">${p.sign} <span>${(p.probability * 100).toFixed(0)}%</span></div>`).join('')
+    + `<p class="timing">${data.frames} frames · hands in ${(data.hands_found_share * 100).toFixed(0)}% · ${data.total_ms} ms on the server</p>`;
+};
+</script>
+"""
+
+
+@app.route("/signs", methods=["GET"])
+def signs_page():
+    """Webcam page: record two seconds of a word sign and show the top three recognised signs."""
+    try:
+        vocabulary = _get_sign_recognizer().vocabulary
+    except Exception as e:  # model not trained yet
+        return f"<h2>Sign model not available: {e}</h2><p>Run <code>python -m word_signs.evaluate</code>.</p>", 503
+    words = ", ".join(sorted(vocabulary))
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sign camera</title>{BASE_CSS}
+<style>
+  .cam-wrap {{ max-width: 680px; margin: 2rem auto; padding: 0 1rem; }}
+  video {{ width: 100%; border-radius: var(--radius); border: 1px solid var(--border); transform: scaleX(-1); }}
+  #record-btn {{ margin: 1rem 0; padding: .6rem 1.2rem; border-radius: 8px; border: 0; background: var(--accent); color: #0d1117; font-weight: 600; cursor: pointer; }}
+  #record-btn:disabled {{ opacity: .5; cursor: default; }}
+  #sign-result .top {{ font-size: 2rem; font-weight: 700; color: var(--accent2); }}
+  #sign-result .alt {{ color: var(--muted); }}
+  #sign-result span {{ font-size: .9rem; color: var(--muted); }}
+  .timing, .vocab {{ color: var(--muted); font-size: .85rem; margin-top: .5rem; }}
+</style></head><body>{_navbar()}
+<main class="cam-wrap">
+  <h1>Sign a STEM word</h1>
+  <video id="cam" autoplay playsinline muted></video>
+  <button id="record-btn" disabled>Record 2 seconds</button>
+  <div id="sign-result" aria-live="polite"></div>
+  <p class="vocab">Signs the model knows ({len(vocabulary)}): {words}</p>
+</main>{SIGNS_PAGE_JS}</body></html>"""
+
+
+@app.route("/recognize-sign", methods=["POST"])
+def recognize_sign():
+    """
+    Word-sign prediction.
+
+    Accepts:
+        - JSON body {"frames": [data URL, ...]} (webcam frames, oldest first), OR
+        - multipart/form-data with field 'video' (a short clip of one sign)
+
+    Returns JSON: {"predictions": [{"sign": "computer", "probability": 0.81}, ...], "frames": 30,
+                   "hands_found_share": 0.9, "decode_ms": ..., "feature_ms": ..., "model_ms": ..., "total_ms": ...}
+    """
+    try:
+        recognizer = _get_sign_recognizer()
+    except Exception as e:
+        return jsonify({"error": f"Sign model could not be loaded: {e}"}), 503
+    try:
+        if "video" in request.files:
+            file = request.files["video"]
+            return jsonify(recognizer.from_video_bytes(file.read(), os.path.splitext(file.filename or "")[1] or ".mp4"))
+        body = request.get_json(silent=True) or {}
+        frames = body.get("frames")
+        if not frames or not isinstance(frames, list):
+            return jsonify({"error": "Send JSON {'frames': [data URLs]} or a 'video' file."}), 400
+        return jsonify(recognizer.from_data_urls(frames[:120]))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,9 @@
+{
+  "requests": 20,
+  "frames_per_request": 30,
+  "median_decode_ms": 76.2,
+  "median_feature_ms": 997.0,
+  "median_model_ms": 8.9,
+  "median_total_ms": 1081.2,
+  "median_request_ms": 1090.5
+}

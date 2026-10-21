@@ -21,3 +21,14 @@ jobs:
           python asl_recognition/model.py
       - name: Run the real search/dedup engine self-test
         run: python search/search_engine.py
+
+  word-signs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r word_signs/requirements.txt
+      - name: Word-sign features, model and the Flask recognition route
+        run: python -m pytest -q tests
